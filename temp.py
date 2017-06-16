@@ -34,22 +34,10 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    if game.is_loser(player):
-        return float("-inf")
+    # TODO: finish this function!
 
-    if game.is_winner(player):
-        return float("inf")
+    raise NotImplementedError
 
-#    own_moves = len(game.get_legal_moves(player))
-#    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-
-    w, h = game.width / 2., game.height / 2.
-    y, x = game.get_player_location(player)
-    center_player=float((h - y)**2 + (w - x)**2)
-    y, x = game.get_player_location(game.get_opponent(player))
-    center_opponent=float((h - y)**2 + (w - x)**2)
-
-    return center_player-center_opponent
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -73,20 +61,9 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # This will return # of available positions closer to player 1 
-    if game.is_loser(player):
-        return float("-inf")
+    # TODO: finish this function!
+    raise NotImplementedError
 
-    if game.is_winner(player):
-        return float("inf")
-
-    spaces=game.get_blank_spaces()
-    y,x=game.get_player_location(player)
-    distance_me=[abs(y-i)+abs(x-i) for i,j in spaces]
-    y,x=game.get_player_location(game.get_opponent(player))
-    distance_you=[abs(y-i)+abs(x-i) for i,j in spaces]
-    spaces_closer=float(sum([(i-j)>0 for i,j in zip(distance_me,distance_you)]))
-    return spaces_closer
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -111,16 +88,7 @@ def custom_score_3(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    if game.is_loser(player):
-        return float("-inf")
-
-    if game.is_winner(player):
-        return float("inf")
-
-    own_moves = len(game.get_legal_moves(player))
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
-
+    raise NotImplementedError
 
 
 class IsolationPlayer:
@@ -252,12 +220,12 @@ class MinimaxPlayer(IsolationPlayer):
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             if not g.get_legal_moves():
-                return game.utility(self)
-            if d==0:
+                return -1
+            if d==depth:
                 return self.score(g,self)
             value = float('-inf')
             for action in g.get_legal_moves():
-                value=max(value,min_value(g.forecast_move(action),d-1))
+                value=max(value,min_value(g.forecast_move(action),d+1))
             return value
 
         def min_value(g,d):
@@ -265,13 +233,13 @@ class MinimaxPlayer(IsolationPlayer):
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             if not g.get_legal_moves():
-                return game.utility(self)
-            if d==0:
+                return 1
+            if d==depth:
                 return self.score(g,self)
             # Returns the utility value of a state
             value = float('inf')
             for action in g.get_legal_moves():
-                value=min(value,max_value(g.forecast_move(action),d-1))
+                value=min(value,max_value(g.forecast_move(action),d+1))
             return value
 
         if not game.get_legal_moves() or depth<1:
@@ -281,7 +249,7 @@ class MinimaxPlayer(IsolationPlayer):
         best_move=(-1,-1)
         for move in game.get_legal_moves():
             state=game.forecast_move(move)
-            current_value=min_value(state,depth-1)
+            current_value=min_value(state,1)
             if current_value>value:
                 value=current_value
                 best_move=move
@@ -323,17 +291,10 @@ class AlphaBetaPlayer(IsolationPlayer):
             Board coordinates corresponding to a legal move; may return
             (-1, -1) if there are no available legal moves.
         """
-        self.time_left=time_left
-        best_move=(-1,-1)
+        self.time_left = time_left
 
-        try:
-            layer=1
-            while True:
-                best_move = self.alphabeta(game,layer)
-                layer +=1
-        except SearchTimeout:
-            return best_move
-        return best_move
+        # TODO: finish this function!
+        raise NotImplementedError
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
 
@@ -383,19 +344,19 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-
+'''
         # TODO: finish this function!
         def max_value(g,d,alpha,beta):
             # Takes as an input the gameboard and depth and return the max possible value among the moves
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             if not g.get_legal_moves():
-                return float('-inf')
-            if d==0:
+                return self.score(g,self)
+            if d==depth:
                 return self.score(g,self)
             value = float('-inf')
             for action in g.get_legal_moves():
-                value=max(value,min_value(g.forecast_move(action),d-1,alpha,beta))
+                value=max(value,min_value(g.forecast_move(action),d+1,alpha,beta))
                 if value>=beta:
                     return value
                 alpha=max(alpha,value)
@@ -406,30 +367,29 @@ class AlphaBetaPlayer(IsolationPlayer):
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             if not g.get_legal_moves():
-                return float('inf')
-            if d==0:
+                return self.score(g,self)
+            if d==depth:
                 return self.score(g,self)
             # Returns the utility value of a state
             value = float('inf')
             for action in g.get_legal_moves():
-                value=min(value,max_value(g.forecast_move(action),d-1,alpha,beta))
+                value=min(value,max_value(g.forecast_move(action),d+1,alpha,beta))
                 if value<=alpha:
                     return value
                 beta=min(beta,value)
             return value
 
-        if not game.get_legal_moves():
+        if not game.get_legal_moves() or depth<1:
             return (-1,-1)
-        if depth==0:
-            return game.get_legal_moves()[0]
 
         value=float('-inf')
         best_move=(-1,-1)
         for move in game.get_legal_moves():
             state=game.forecast_move(move)
-            current_value=min_value(state,depth-1,alpha,beta)
-            alpha=max(alpha,current_value)
-            if current_value>value:
+            current_value=min_value(state,1,alpha,beta)
+            if current_value>=value:
                 value=current_value
                 best_move=move
         return best_move
+'''     
+        return game.get_legal_moves()[0]
