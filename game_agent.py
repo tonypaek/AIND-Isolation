@@ -9,54 +9,14 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
-
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    This should be the best heuristic function for your project submission.
+    This heuristic scores game player's position by combining the move
+    available to the player relative to that of the opponent and the number of
+    moves that are closer to the player relative to the opponent. 
 
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
-
-    Parameters
-    ----------
-    game : `isolation.Board`
-        An instance of `isolation.Board` encoding the current state of the
-        game (e.g., player locations and blocked cells).
-
-    player : object
-        A player instance in the current game (i.e., an object corresponding to
-        one of the player objects `game.__player_1__` or `game.__player_2__`.)
-
-    Returns
-    -------
-    float
-        The heuristic value of the current game state to the specified player.
-    """
-    if game.is_loser(player):
-        return float("-inf")
-
-    if game.is_winner(player):
-        return float("inf")
-
-#    own_moves = len(game.get_legal_moves(player))
-#    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-
-    w, h = game.width / 2., game.height / 2.
-    y, x = game.get_player_location(player)
-    center_player=float((h - y)**2 + (w - x)**2)
-    y, x = game.get_player_location(game.get_opponent(player))
-    center_opponent=float((h - y)**2 + (w - x)**2)
-
-    return center_player-center_opponent
-
-def custom_score_2(game, player):
-    """Calculate the heuristic value of a game state from the point of view
-    of the given player.
-
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
 
     Parameters
     ----------
@@ -76,24 +36,77 @@ def custom_score_2(game, player):
     # This will return # of available positions closer to player 1 
     if game.is_loser(player):
         return float("-inf")
+    if game.is_winner(player):
+        return float("inf")
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))*1.
+    spaces=game.get_blank_spaces()
+    y1,x1=game.get_player_location(player)
+    y2,x2=game.get_player_location(game.get_opponent(player))
+    closerBlankSpaces=float(sum([(abs(y1-i)+abs(x1-i)-abs(y2-j)-abs(x2-j))>0 for i,j in spaces]))
+    return float(own_moves - opp_moves)*10+closerBlankSpaces
+
+
+
+def custom_score_2(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player.
+
+    This custom score takes into account the relative position of the board, along with the differentials in the available legal moves.
+    While there could be improvements the rigor of the tests as it was repeated only 5 times,
+    The heuristics on average generally performs better than AB_improved by 2~3%. 
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+    if game.is_loser(player):
+        return float("-inf")
 
     if game.is_winner(player):
         return float("inf")
 
-    spaces=game.get_blank_spaces()
-    y,x=game.get_player_location(player)
-    distance_me=[abs(y-i)+abs(x-i) for i,j in spaces]
-    y,x=game.get_player_location(game.get_opponent(player))
-    distance_you=[abs(y-i)+abs(x-i) for i,j in spaces]
-    spaces_closer=float(sum([(i-j)>0 for i,j in zip(distance_me,distance_you)]))
-    return spaces_closer
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))*1.
+
+    my_position=game.get_player_location(player)
+    your_position=game.get_player_location(game.get_opponent(player))
+
+
+    def score_position(i):
+        if i[0]==i[1] and (i[0]==0 or i[0]==7):
+            return 10
+        if (i[0]==1 or i[0]==7 or i[1]==1 or i[1]==1):
+            return 5
+        else:
+            return 0
+
+    position_score=score_position(your_position)-score_position(my_position)
+
+    return (own_moves-opp_moves)*10 + position_score
+
+
+
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
+    This heuristic scores game player's position by combining the available moves
+    of the player relative to the opponent. However, contrary to the AB improved,
+    the weight is given more to the number of moves available to the opponent,
+    naturally inducing the agents to select moves that are more aggressive.
 
     Parameters
     ----------
@@ -117,9 +130,14 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
+    # Go to the center when it is open
+#    if (3,3) in game.get_blank_spaces():
+#        y,x=game.get_player_location(player)
+#        return 1/float(abs(3-y)+abs(3-x))
+
     own_moves = len(game.get_legal_moves(player))
     opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
+    return float(own_moves - opp_moves*1.8)
 
 
 
@@ -327,10 +345,10 @@ class AlphaBetaPlayer(IsolationPlayer):
         best_move=(-1,-1)
 
         try:
-            layer=1
+            d=1
             while True:
-                best_move = self.alphabeta(game,layer)
-                layer +=1
+                best_move = self.alphabeta(game,d)
+                d +=1
         except SearchTimeout:
             return best_move
         return best_move
